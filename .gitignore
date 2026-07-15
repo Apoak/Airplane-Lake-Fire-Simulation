@@ -1,6 +1,9 @@
 # LiDAR data files (large binaries, not tracked)
 laz_files/
 
+# Project data (raw downloads + derived rasters, not tracked)
+data/
+
 # Python
 __pycache__/
 *.py[cod]
@@ -29,5 +32,6 @@ env/
 *.swp
 *.swo
 
-# Markdown
+# Markdown (local-only files)
 PROJECT_BRIEF.md
+PROGRESS.md

@@ -24,8 +24,12 @@ The intended pipeline stages are:
 | LANDFIRE layers | LANDFIRE LFPS / Data Access Tool | GeoTIFF |
 | Base map (WA state) | CalTopo | MBTiles |
 
-**LANDFIRE requires 8 layers, all from the same version/year (last version before the fire):**
+**LANDFIRE requires 8 layers, all from the same version/year:**
 `ELEV`, `SLPD`, `ASP`, `FBFM40` (primary Rothermel fuel input), `CC`, `CH`, `CBH`, `CBD`
+
+The LANDFIRE version must be the **last one whose reference year predates the fire** — later versions may already incorporate post-fire disturbance and will corrupt the comparison. The AOI submitted to LANDFIRE's tool must be a GeoJSON in **EPSG:3857**.
+
+`CC`, `CH`, `CBH`, and `CBD` are the four layers that will be directly compared against LiDAR-derived equivalents (the calibration/validation step).
 
 LiDAR data for this project comes from two USGS surveys: the 2014 Glacier Peak QL1 survey and the 2019 Eastern Cascades survey.
 
@@ -37,6 +41,8 @@ LiDAR data for this project comes from two USGS surveys: the 2014 Glacier Peak Q
 
 **Resampling:** nearest-neighbor for categorical layers (FBFM40); bilinear or cubic for continuous layers (elevation, CC, CH, CBH, CBD).
 
+**Weather input for Rothermel:** Use historical data from the nearest RAWS station for the fire date if available. A static placeholder (plausible fixed wind speed/direction, fuel moisture values) is an acceptable fallback.
+
 **GeoTIFF editing:** Never use general image editors (Windows Photos, Paint, etc.) on GeoTIFFs — they strip georeferencing metadata. Use QGIS or `gdal_translate -projwin` instead.
 
 ## Known Gotchas
@@ -45,6 +51,7 @@ LiDAR data for this project comes from two USGS surveys: the 2014 Glacier Peak Q
 - **LANDFIRE AOI submission:** The LFPS tool requires the AOI GeoJSON in **EPSG:3857** specifically. Verify coordinate magnitudes are large 7-digit meter values (not decimal degrees) before submitting.
 - **GeoJSON multipart geometry:** QGIS buffer operations can output `MultiPolygon` even for a single polygon. Use "Multipart to Singleparts" if a downstream tool expects `Polygon`.
 - **GeoJSON paste failures:** BOM characters, line breaks, or copy truncation cause silent failures when submitting to web tools. Minify to a single line via `json.load`/`json.dump` in Python before pasting.
+- **New/changed LiDAR processing logic:** Before running a new or modified per-tile algorithm (e.g. `classify_ground.py`) across the full 90+ tile batch, test it on 1-2 tiles first and sanity-check the output stats (min/max/mean, % NaN, plausible physical ranges). A logic bug caught after a full batch run means redoing the whole multi-minute run. This caught real bugs during CBH/CBD development: a fixed-height profile ceiling that made CBH compute as all-NaN, and a near-zero-canopy-depth division that produced physically implausible CBD values (max 16 kg/m³ vs. a realistic ~0.3-0.5 ceiling).
 
 ## Project Structure Convention
 
